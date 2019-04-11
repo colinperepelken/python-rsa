@@ -1,22 +1,27 @@
 import random
 import math
 
+# Encrypt an integer m.
 def encrypt(m):
     return (m ** public_key.e) % public_key.n
-    
+
+# Decrypt an integer c.
 def decrypt(c):
     return (c ** private_key.d) % private_key.n
 
+# Public key class.
 class public_key:
     def __init__(self, n, e):
         self.n = n
         self.e = e              
-        
+
+# Private key class.
 class private_key:
     def __init__(self, n, d):
         self.n = n
         self.d = d
 
+# Generates public and private keys.
 def generate_keys():
     
     # Generate list of primes.
@@ -41,6 +46,7 @@ def generate_keys():
     while math.gcd(e, totient) != 1 and e < totient:
         e += 1
     
+    # Calculate d using modulo inverse function.
     d = modinv(e, totient)
     
     return private_key(n, d), public_key(n, e)
@@ -61,19 +67,31 @@ def modinv(a, m):
         raise ValueError('{} has no inverse mod {}'.format(a, m))
     return d
 
+# Returns True if n is prime.
 def is_prime(n):
     if n % 2 == 0 and n > 2: 
         return False
     return all(n % i for i in range(3, int(math.sqrt(n)) + 1, 2))
 
+# Encrypt an entire message.
+def encrypt_message(plaintext_message):
+    encoded_message = list(plaintext_message.encode('utf8'))
+    cipher_message = [encrypt(m) for m in encoded_message]
+    return cipher_message
+
+# Decrypt an entire message.
+def decrypt_message(ciphertext_message):
+    plaintext_message = ''.join(chr(decrypt(c)) for c in ciphertext_message)
+    return plaintext_message
 
 print("Generating keys...")
 private_key, public_key = generate_keys()
 
-message = 50
-ciphertext = encrypt(message)
-print("Encrypted plaintext {} as ciphertext {}.".format(message, ciphertext))
-plaintext = decrypt(ciphertext)
-print("Decrypted ciphertext as {}".format(plaintext))
+message = "Hello, World!!"
+ciphertext = encrypt_message(message)
+plaintext = decrypt_message(ciphertext)
+print(plaintext)
+    
+
 
     
