@@ -1,5 +1,6 @@
 import random
 import math
+import sys.argv
 
 # Encrypt an integer m.
 def encrypt(m):
@@ -42,13 +43,14 @@ def generate_keys():
     
     # Choose an integer e s.t. 1 < e < totient and gcd(e, totient) = 1.
     # i.e. e and totient are coprime.
-    e = 2
-    while math.gcd(e, totient) != 1 and e < totient:
-        e += 1
+    e = random.randrange(1, totient)
+    while math.gcd(e, totient) != 1:
+        e = random.randrange(1, totient)
     
     # Calculate d using modulo inverse function.
     d = modinv(e, totient)
     
+    # Initialize and return the keys.
     return private_key(n, d), public_key(n, e)
     
 
@@ -73,25 +75,36 @@ def is_prime(n):
         return False
     return all(n % i for i in range(3, int(math.sqrt(n)) + 1, 2))
 
-# Encrypt an entire message.
-def encrypt_message(plaintext_message):
-    encoded_message = list(plaintext_message.encode('utf8'))
-    cipher_message = [encrypt(m) for m in encoded_message]
-    return cipher_message
+# Encrypt bytes.
+def encrypt_bytes(plain_bytes):
+    encrypted_bytes = [encrypt(m) for m in plain_bytes]
+    return encrypted_bytes
 
-# Decrypt an entire message.
-def decrypt_message(ciphertext_message):
-    plaintext_message = ''.join(chr(decrypt(c)) for c in ciphertext_message)
-    return plaintext_message
+# Decrypt bytes.
+def decrypt_bytes(cipher_bytes):
+    return [decrypt(c) for c in cipher_bytes]
 
+# Generate some test keys.
 print("Generating keys...")
 private_key, public_key = generate_keys()
 
-message = "Hello, World!!"
-ciphertext = encrypt_message(message)
-plaintext = decrypt_message(ciphertext)
-print(plaintext)
-    
+# Test using string.
+message = "Hello, World!"
+message_bytes = message.encode('utf8')
+ciphertext = encrypt_bytes(message_bytes)
+plaintext = decrypt_bytes(ciphertext)
+print(bytearray(plaintext).decode())
 
+# Test using file.
+with open("test.jpg", "rb") as f:
+    data = f.read()
+    print("Reading file data...")
+    ciphertext = encrypt_bytes(data)
+    print("Encrypted data.")
+    plaintext = decrypt_bytes(ciphertext)
+    print("Decrypted data.")
+    with open("decrypted.jpg", "wb") as f:
+        print("Writing to file.")
+        f.write(bytearray(plaintext))
 
-    
+print("Done!")
