@@ -19,7 +19,7 @@ Creates the file 'decrypted.\<filetype\>' in the current directory.
 python rsa.py -d <filename>  
 ```
 
-### Limitations  
+## Limitations  
 - For speed, and because I don't actually care about security, primes are between 2 and 100. Edit the source code and change this if you want!  
 - You will need to send your public_key file to a friend and they will have to place it in their directory for them to encrypt a message for you.  
 - Stores encrypted files using base64 encoding of the encrypted bytes. Encrypted files are 10x the size of the plaintext files. Definitely noticeable when encrypting images.  
