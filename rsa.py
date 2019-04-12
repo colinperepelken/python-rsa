@@ -167,7 +167,7 @@ def load_keys():
 def main(argv):
     global public_key_object, private_key_object
     try:
-        opts, args = getopt.getopt(argv, "ge:d:", ["=ifile"])
+        opts, args = getopt.getopt(argv, "ge:d:", [])
     except getopt.GetoptError:
         print('Usage: rsa.py -g | -e <inputfile> | -d <inputfile>')
         sys.exit(2)
