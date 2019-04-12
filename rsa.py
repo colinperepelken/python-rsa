@@ -1,14 +1,20 @@
 import random
 import math
-import sys.argv
+import sys, getopt
+import base64
+
+public_key_object = None
+private_key_object = None
 
 # Encrypt an integer m.
 def encrypt(m):
-    return (m ** public_key.e) % public_key.n
+    global public_key_object
+    return (m ** public_key_object.e) % public_key_object.n
 
 # Decrypt an integer c.
 def decrypt(c):
-    return (c ** private_key.d) % private_key.n
+    global private_key_object
+    return (c ** private_key_object.d) % private_key_object.n
 
 # Public key class.
 class public_key:
@@ -84,27 +90,98 @@ def encrypt_bytes(plain_bytes):
 def decrypt_bytes(cipher_bytes):
     return [decrypt(c) for c in cipher_bytes]
 
-# Generate some test keys.
-print("Generating keys...")
-private_key, public_key = generate_keys()
+# Encrypt a file.
+def encrypt_file(filename):
+    global public_key_object
+    
+    if public_key_object is None:
+        print("Error: Missing public key file.")
+        return
+    
+    try:
+        with open(filename, "rb") as f:
+            data = f.read()
+            cipher_bytes = encrypt_bytes(data)
+            with open("encrypted" + filename[filename.index('.'):], "wb") as encrypted_file:
+                encrypted_file.write(base64.b64encode(str(cipher_bytes).encode()))
+                print("Successfully encrypted file. Created encrypted{}".format(filename[filename.index('.'):]))
+    except FileNotFoundError:
+        print("The file you are trying to encrypt does not exist.")
 
-# Test using string.
-message = "Hello, World!"
-message_bytes = message.encode('utf8')
-ciphertext = encrypt_bytes(message_bytes)
-plaintext = decrypt_bytes(ciphertext)
-print(bytearray(plaintext).decode())
+def decrypt_file(filename):
+    global private_key_object
+    
+    if private_key_object is None:
+        print("Error: Missing private key file.")
+        return
+    
+    try:
+        with open(filename, "r") as f:
+            data = f.read()
+            cipher_bytes = base64.b64decode(data).decode()[1:-1].split(',')
+            cipher_bytes = [int(c) for c in cipher_bytes]
+            plain_bytes = decrypt_bytes(cipher_bytes)
+            with open("decrypted" + filename[filename.index('.'):], "wb") as decrypted_file:
+                decrypted_file.write(bytearray(plain_bytes))
+                print("Successfully decrypted file. Created decrypted{}".format(filename[filename.index('.'):]))
+    except FileNotFoundError:
+        print("The file you are trying to decrypt does not exist.")
 
-# Test using file.
-with open("test.jpg", "rb") as f:
-    data = f.read()
-    print("Reading file data...")
-    ciphertext = encrypt_bytes(data)
-    print("Encrypted data.")
-    plaintext = decrypt_bytes(ciphertext)
-    print("Decrypted data.")
-    with open("decrypted.jpg", "wb") as f:
-        print("Writing to file.")
-        f.write(bytearray(plaintext))
+# Generates keys and creates two files in this directory.
+def generate_key_files():
+    global public_key_object, private_key_object
+    print("Generating keys...")
+    private_key_object, public_key_object = generate_keys()
+    
+    with open("public_key", "wb") as f:
+        f.write(base64.b64encode("{},{}".format(public_key_object.n, public_key_object.e).encode()))
+        print("Created 'public_key' file in this directory.")
+        
+    with open("private_key", "wb") as f:
+        f.write(base64.b64encode("{},{}".format(private_key_object.n, private_key_object.d).encode()))
+        print("Created 'private_key' file in this directory.")
 
-print("Done!")
+# Load existing public key and private key files.
+# Returns public/private key objects.
+def load_keys():
+    global public_key_object, private_key_object
+    
+    try:
+        with open("public_key", "rb") as f:
+            data = f.read()
+            key = base64.b64decode(data).decode().split(',')
+            public_key_object = public_key(int(key[0]), int(key[1]))
+    except FileNotFoundError:
+        print("Notice: No public key found.")
+    try:
+        with open("private_key", "rb") as f:
+            data = f.read()
+            key = base64.b64decode(data).decode().split(',')
+            private_key_object = private_key(int(key[0]), int(key[1]))
+    except FileNotFoundError:
+        print("Notice: No private key found.")
+    
+    return public_key_object, private_key_object
+
+# Check command line arguments for instructions.
+def main(argv):
+    global public_key_object, private_key_object
+    try:
+        opts, args = getopt.getopt(argv, "ge:d:", ["=ifile"])
+    except getopt.GetoptError:
+        print('Usage: rsa.py -g | -e <inputfile> | -d <inputfile>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-e':
+            public_key_object, private_key_object = load_keys()
+            encrypt_file(arg)
+        elif opt == '-d':
+            public_key_object, private_key_object = load_keys()
+            decrypt_file(arg)
+        elif opt == '-g':
+            generate_key_files()
+    if len(opts) == 0:
+        print('Usage: rsa.py -g | -e <inputfile> | -d <inputfile>')
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
